@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Service
-public class JwtService {
+public final class JwtService {
 
     private final SecretKey key;
     private final long expirationMs;

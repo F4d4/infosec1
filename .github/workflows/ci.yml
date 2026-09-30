@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B package
+
+  sast:
+    name: SAST (SpotBugs + FindSecBugs)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Run SpotBugs
+        run: mvn -B compile spotbugs:check
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### SpotBugs + FindSecBugs" >> $GITHUB_STEP_SUMMARY
+          echo "Bugs found: $(grep -c '<BugInstance' target/spotbugsXml.xml)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: spotbugs-report
+          path: |
+            target/reports/spotbugs.html
+            target/spotbugsXml.xml
+
+  sca:
+    name: SCA (OWASP Dependency-Check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Cache NVD database
+        uses: actions/cache@v6
+        with:
+          path: ~/.dc-data
+          key: dependency-check-${{ github.run_id }}
+          restore-keys: dependency-check-
+
+      - name: Run Dependency-Check
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: mvn -B dependency-check:check -DdataDirectory=$HOME/.dc-data
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### OWASP Dependency-Check" >> $GITHUB_STEP_SUMMARY
+          echo "Dependencies scanned: $(jq '.dependencies | length' target/dependency-check-report.json)" >> $GITHUB_STEP_SUMMARY
+          echo "Vulnerabilities found: $(jq '[.dependencies[].vulnerabilities // [] | length] | add' target/dependency-check-report.json)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency | CVE | Severity |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          jq -r '.dependencies[] | .fileName as $f | (.vulnerabilities // [])[] | "| \($f) | \(.name) | \(.severity) |"' target/dependency-check-report.json >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: dependency-check-report
+          path: |
+            target/dependency-check-report.html
+            target/dependency-check-report.json
