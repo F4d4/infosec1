@@ -117,10 +117,16 @@ Pipeline (`.github/workflows/ci.yml`) запускается при каждом
 Первый запуск Dependency-Check обнаружил критические уязвимости в зависимостях (Spring Framework, Spring Security, Tomcat, PostgreSQL JDBC, Jackson). Они были исправлены обновлением до Spring Boot 4.1.1, Tomcat 11.0.26 и Jackson 2.21.7 / 3.1.7.
 
 Dependency-check (до исправления):
+<img width="1901" height="896" alt="image" src="https://github.com/user-attachments/assets/2494c2bd-93b0-41cf-b871-19684385013d" />
+
 
 Dependency-check (после исправления):
+<img width="1902" height="908" alt="image" src="https://github.com/user-attachments/assets/9b0c87d2-b029-4987-81d1-f8b98ddc67ca" />
+
 
 Spotbugs:
+<img width="617" height="846" alt="image" src="https://github.com/user-attachments/assets/93bdd731-5fcd-498e-b721-5d8d4ce2f92a" />
+
 
 ### Последний запуск пайплайна
 
