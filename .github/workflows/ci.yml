@@ -56,6 +56,7 @@ jobs:
   sca:
     name: SCA (OWASP Dependency-Check)
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
 
@@ -65,8 +66,8 @@ jobs:
           java-version: 17
           cache: maven
 
-      - name: Cache NVD database
-        uses: actions/cache@v6
+      - name: Restore NVD database
+        uses: actions/cache/restore@v6
         with:
           path: ~/.dc-data
           key: dependency-check-${{ github.run_id }}
@@ -76,6 +77,13 @@ jobs:
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: mvn -B dependency-check:check -DdataDirectory=$HOME/.dc-data
+
+      - name: Save NVD database
+        if: always()
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.dc-data
+          key: dependency-check-${{ github.run_id }}
 
       - name: Summary
         if: always()
